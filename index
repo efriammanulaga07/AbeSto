@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sto. Niño Rice Area Mapper</title>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+    }
+
+    header {
+        background: #2e7d32;
+        color: white;
+        padding: 12px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    #map {
+        height: 85vh;
+        width: 100%;
+    }
+
+    .controls {
+        padding: 10px;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    input[type="file"] {
+        padding: 5px;
+    }
+
+    button {
+        padding: 8px 12px;
+        background: #2e7d32;
+        border: none;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #1b5e20;
+    }
+
+    .info {
+        font-size: 13px;
+        color: #444;
+    }
+</style>
+</head>
+
+<body>
+
+<header>
+🌾 Sto. Niño Rice Area Mapping Tool
+</header>
+
+<div class="controls">
+    <input type="file" id="gpxFile" multiple accept=".gpx">
+    <button onclick="clearMap()">Clear Map</button>
+    <div class="info">Upload GPX files of rice parcels</div>
+</div>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// Initialize map centered in Cagayan (adjust if needed)
+var map = L.map('map').setView([17.9, 121.7], 11);
+
+// Basemap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+var gpxLayers = [];
+
+// Handle GPX upload
+document.getElementById('gpxFile').addEventListener('change', function(e) {
+    const files = e.target.files;
+
+    for (let file of files) {
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(event.target.result, "text/xml");
+
+            const geojson = toGeoJSON.gpx(xml);
+
+            const layer = L.geoJSON(geojson, {
+                style: {
+                    color: '#ff5722',
+                    weight: 3
+                }
+            }).addTo(map);
+
+            gpxLayers.push(layer);
+
+            // Zoom to layer
+            map.fitBounds(layer.getBounds());
+        };
+
+        reader.readAsText(file);
+    }
+});
+
+// Clear map
+function clearMap() {
+    gpxLayers.forEach(layer => map.removeLayer(layer));
+    gpxLayers = [];
+}
+</script>
+
+<!-- GPX to GeoJSON Converter -->
+<script src="https://unpkg.com/@tmcw/togeojson@0.16.0/dist/togeojson.umd.js"></script>
+
+</body>
+</html>
